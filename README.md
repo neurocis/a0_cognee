@@ -219,3 +219,4 @@ MIT
 - [Cognee](https://www.cognee.ai/) by Topoteretes — the underlying AI memory platform
 - [Agent Zero](https://github.com/agent0ai/agent-zero) by Jan Tomášek — the agentic framework
 - Plugin architecture inspired by [a0-hindsight](https://github.com/neurocis/a0-hindsight) and [a0-plugin-honcho](https://github.com/alogotron/a0-plugin-honcho)
+- This plugin is part of the **neurocis method** for personal assistant memory, powering knowledge retention and semantic search for the Bibiotek agent (librarian)

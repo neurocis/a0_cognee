@@ -1,3 +1,5 @@
+# This plugin is part of the neurocis method for personal assistant memory,
+# used by the Bibiotek agent (librarian) for knowledge retention and semantic search.
 name: a0-cognee
 title: Cognee Knowledge Memory
 description: >
