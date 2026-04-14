@@ -1,0 +1,158 @@
+<div x-data="{
+    config: {
+        cognee_dataset_prefix: 'a0',
+        cognee_retain_enabled: true,
+        cognee_recall_enabled: true,
+        cognee_context_enabled: true,
+        cognee_search_type: 'GRAPH_COMPLETION',
+        cognee_recall_max_tokens: 4096,
+        cognee_auto_cognify: true,
+        cognee_cache_ttl: 120,
+        cognee_context_max_tokens: 500,
+        cognee_debug: false
+    }
+}">
+
+    <div class="settings-section">
+        <h3>Cognee Knowledge Memory</h3>
+        <p class="settings-description">
+            Configure how Agent Zero interacts with the Cognee knowledge graph.
+            Set <code>COGNEE_BASE_URL</code> and optionally <code>COGNEE_API_KEY</code>
+            in <strong>Settings → Secrets</strong>.
+        </p>
+
+        <!-- Dataset Prefix -->
+        <div class="settings-item">
+            <label for="cognee_dataset_prefix">Dataset Prefix</label>
+            <input type="text"
+                   id="cognee_dataset_prefix"
+                   x-model="config.cognee_dataset_prefix"
+                   class="settings-input"
+                   placeholder="a0" />
+            <p class="settings-hint">
+                Combined with the project name to form the dataset identifier
+                (e.g., <code>a0-myproject</code>).
+            </p>
+        </div>
+
+        <!-- Feature Toggles -->
+        <div class="settings-item">
+            <label>
+                <input type="checkbox" x-model="config.cognee_retain_enabled" />
+                Enable Retain
+            </label>
+            <p class="settings-hint">
+                Automatically extract and store conversation knowledge in Cognee.
+            </p>
+        </div>
+
+        <div class="settings-item">
+            <label>
+                <input type="checkbox" x-model="config.cognee_recall_enabled" />
+                Enable Recall
+            </label>
+            <p class="settings-hint">
+                Enrich agent responses with semantic/graph search from Cognee.
+            </p>
+        </div>
+
+        <div class="settings-item">
+            <label>
+                <input type="checkbox" x-model="config.cognee_context_enabled" />
+                Enable Context Injection
+            </label>
+            <p class="settings-hint">
+                Inject knowledge graph context into the system prompt.
+            </p>
+        </div>
+
+        <div class="settings-item">
+            <label>
+                <input type="checkbox" x-model="config.cognee_auto_cognify" />
+                Auto-Cognify
+            </label>
+            <p class="settings-hint">
+                Automatically build knowledge graph after retaining new data.
+                Disable for manual control over when cognification runs.
+            </p>
+        </div>
+
+        <!-- Search Type -->
+        <div class="settings-item">
+            <label for="cognee_search_type">Search Type</label>
+            <select id="cognee_search_type"
+                    x-model="config.cognee_search_type"
+                    class="settings-select">
+                <option value="GRAPH_COMPLETION">Graph Completion (default)</option>
+                <option value="RAG_COMPLETION">RAG Completion</option>
+                <option value="GRAPH_COMPLETION_COT">Graph Chain-of-Thought</option>
+                <option value="GRAPH_SUMMARY_COMPLETION">Graph Summary</option>
+                <option value="TRIPLET_COMPLETION">Triplet Completion</option>
+                <option value="CHUNKS">Chunks (raw)</option>
+                <option value="SUMMARIES">Summaries</option>
+                <option value="FEELING_LUCKY">Feeling Lucky (auto)</option>
+            </select>
+            <p class="settings-hint">
+                Cognee search strategy for recall queries.
+                Graph Completion uses graph-aware Q&A; RAG uses standard vector retrieval.
+            </p>
+        </div>
+
+        <!-- Recall Max Tokens -->
+        <div class="settings-item">
+            <label for="cognee_recall_max_tokens">Recall Max Tokens</label>
+            <input type="number"
+                   id="cognee_recall_max_tokens"
+                   x-model.number="config.cognee_recall_max_tokens"
+                   class="settings-input"
+                   min="256"
+                   max="16384"
+                   step="256" />
+            <p class="settings-hint">
+                Maximum tokens to inject from recall search results.
+            </p>
+        </div>
+
+        <!-- Context Max Tokens -->
+        <div class="settings-item">
+            <label for="cognee_context_max_tokens">Context Max Tokens</label>
+            <input type="number"
+                   id="cognee_context_max_tokens"
+                   x-model.number="config.cognee_context_max_tokens"
+                   class="settings-input"
+                   min="100"
+                   max="4096"
+                   step="100" />
+            <p class="settings-hint">
+                Maximum tokens for knowledge context injected into the system prompt.
+            </p>
+        </div>
+
+        <!-- Cache TTL -->
+        <div class="settings-item">
+            <label for="cognee_cache_ttl">Cache TTL (seconds)</label>
+            <input type="number"
+                   id="cognee_cache_ttl"
+                   x-model.number="config.cognee_cache_ttl"
+                   class="settings-input"
+                   min="0"
+                   max="3600"
+                   step="10" />
+            <p class="settings-hint">
+                How long to cache search results before re-querying Cognee.
+                Set to 0 to disable caching.
+            </p>
+        </div>
+
+        <!-- Debug -->
+        <div class="settings-item">
+            <label>
+                <input type="checkbox" x-model="config.cognee_debug" />
+                Debug Logging
+            </label>
+            <p class="settings-hint">
+                Enable verbose logging for troubleshooting Cognee integration.
+            </p>
+        </div>
+    </div>
+</div>

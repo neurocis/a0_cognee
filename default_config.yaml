@@ -1,0 +1,26 @@
+# Cognee Knowledge Memory - Default Configuration
+# These values are used when not overridden in the plugin settings UI.
+
+# Dataset name prefix - combined with project name for isolation
+cognee_dataset_prefix: "a0"
+
+# Enable/disable individual features
+cognee_retain_enabled: true
+cognee_recall_enabled: true
+cognee_context_enabled: true
+
+# Search configuration
+cognee_search_type: "GRAPH_COMPLETION"
+cognee_recall_max_tokens: 4096
+
+# Auto-cognify after retaining new data (builds knowledge graph)
+cognee_auto_cognify: true
+
+# Context injection cache TTL in seconds
+cognee_cache_ttl: 120
+
+# Maximum tokens for context injection into system prompt
+cognee_context_max_tokens: 500
+
+# Debug logging
+cognee_debug: false
