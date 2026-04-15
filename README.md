@@ -1,6 +1,9 @@
-# a0-cognee — Cognee Knowledge Memory for Agent Zero
+# a0_cognee — Cognee Knowledge Memory for Agent Zero
 
 An Agent Zero community plugin that integrates [Cognee](https://www.cognee.ai/), an open-source AI memory platform combining vector search with graph databases, into Agent Zero's memory lifecycle.
+
+**Plugin Name:** `a0_cognee` (underscore) | **GitHub:** https://github.com/neurocis/a0_cognee | **Version:** 1.0.0 | **License:** MIT
+
 
 ## What It Does
 
@@ -66,21 +69,19 @@ curl http://localhost:8000/api/health
 
 ## Installation
 
-1. Clone this repository into your Agent Zero plugins directory:
+### Option 1: Clone from GitHub
+
+1. Clone the plugin into your Agent Zero plugins directory:
    ```bash
    cd /path/to/agent-zero/usr/plugins/
    git clone https://github.com/neurocis/a0_cognee.git cognee
    ```
+   
+   **Note:** The plugin is named `a0_cognee` in the community index (underscore format for CI compliance), but Agent Zero installs it locally as `cognee` (without the prefix).
 
-2. Enable the plugin in Agent Zero's **Settings → Plugins** panel.
+2. Enable the plugin in **Settings → Plugins**.
 
-3. Set your Cognee server URL in **Settings → Secrets**:
-   ```
-   COGNEE_BASE_URL = http://your-cognee-host:8000
-   COGNEE_API_KEY = (optional, for authenticated instances)
-   ```
-
-4. The plugin will automatically install its dependencies (`aiohttp`) on first load.
+3. Configure your Cognee server URL in **Settings → Secrets**:
 
 ## Configuration
 
