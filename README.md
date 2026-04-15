@@ -69,7 +69,7 @@ curl http://localhost:8000/api/health
 1. Clone this repository into your Agent Zero plugins directory:
    ```bash
    cd /path/to/agent-zero/usr/plugins/
-   git clone https://github.com/neurocis/a0-cognee.git cognee
+   git clone https://github.com/neurocis/a0_cognee.git cognee
    ```
 
 2. Enable the plugin in Agent Zero's **Settings → Plugins** panel.
