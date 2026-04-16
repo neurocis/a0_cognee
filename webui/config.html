@@ -1,5 +1,6 @@
 <div x-data="{
     config: {
+        cognee_base_url: 'http://localhost:8000',
         cognee_dataset_prefix: 'a0',
         cognee_retain_enabled: true,
         cognee_recall_enabled: true,
@@ -17,9 +18,22 @@
         <h3>Cognee Knowledge Memory</h3>
         <p class="settings-description">
             Configure how Agent Zero interacts with the Cognee knowledge graph.
-            Set <code>COGNEE_BASE_URL</code> and optionally <code>COGNEE_API_KEY</code>
-            in <strong>Settings → Secrets</strong>.
+            Set optional <code>COGNEE_API_KEY</code> in <strong>Settings → Secrets</strong>.
         </p>
+
+        <!-- Cognee Base URL -->
+        <div class="settings-item">
+            <label for="cognee_base_url">Cognee Base URL</label>
+            <input type="text"
+                   id="cognee_base_url"
+                   x-model="config.cognee_base_url"
+                   class="settings-input"
+                   placeholder="http://localhost:8000" />
+            <p class="settings-hint">
+                Base URL of your Cognee API server (e.g., <code>http://localhost:8000</code>
+                or <code>https://cognee.example.com</code>).
+            </p>
+        </div>
 
         <!-- Dataset Prefix -->
         <div class="settings-item">

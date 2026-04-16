@@ -20,6 +20,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 _DEFAULTS = {
+    "cognee_base_url": "http://localhost:8000",
     "cognee_dataset_prefix": "a0",
     "cognee_retain_enabled": True,
     "cognee_recall_enabled": True,
@@ -104,13 +105,16 @@ def _get_secret(context, name: str, fallback: str = "") -> str:
 
 
 def get_base_url(agent) -> str:
-    """Get the Cognee server base URL from secrets."""
-    context = agent.context if hasattr(agent, "context") else None
-    url = _get_secret(context, "COGNEE_BASE_URL", "")
+    """Get the Cognee server base URL from plugin config (preferred) or secrets (fallback)."""
+    config = _get_plugin_config(agent)
+    url = config.get("cognee_base_url", "")
     if not url:
-        # Fallback: check environment variable
+        # Fallback 1: check secrets for backward compatibility
+        context = agent.context if hasattr(agent, "context") else None
+        url = _get_secret(context, "COGNEE_BASE_URL", "")
+    if not url:
+        # Fallback 2: check environment variable
         import os
-
         url = os.environ.get("COGNEE_BASE_URL", "")
     return url.rstrip("/")
 

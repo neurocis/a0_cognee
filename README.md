@@ -81,23 +81,23 @@ curl http://localhost:8000/api/health
 
 2. Enable the plugin in **Settings → Plugins**.
 
-3. Configure your Cognee server URL in **Settings → Secrets**:
+3. Configure your Cognee server:
+   - **Required**: Set `Cognee Base URL` in **Settings → Cognee Knowledge Memory** (e.g., `http://your-cognee-host:8000`)
+   - **Optional**: Set `COGNEE_API_KEY` in **Settings → Secrets** (for authenticated instances)
+
+### Option 2: Install from Plugin Hub
+
+Once available in the Plugin Hub, install directly from **Settings → Plugins**.
 
 ## Configuration
 
 All settings are configurable via the plugin's WebUI panel (**Settings → Plugins → Cognee Knowledge Memory**).
 
-### Secrets (Settings → Secrets)
-
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `COGNEE_BASE_URL` | **Yes** | Cognee server URL (e.g., `http://localhost:8000`) |
-| `COGNEE_API_KEY` | No | API key for authenticated Cognee instances |
-
-### Plugin Settings
+### WebUI Settings
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
+| `Cognee Base URL` | text | `http://localhost:8000` | Base URL of your Cognee API server |
 | Dataset Prefix | string | `a0` | Combined with project name for dataset isolation |
 | Enable Retain | bool | `true` | Auto-extract and store conversation knowledge |
 | Enable Recall | bool | `true` | Enrich responses with graph search results |

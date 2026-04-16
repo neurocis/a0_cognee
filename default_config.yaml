@@ -1,6 +1,9 @@
 # Cognee Knowledge Memory - Default Configuration
 # These values are used when not overridden in the plugin settings UI.
 
+# Cognee API base URL (e.g., http://localhost:8000)
+cognee_base_url: "http://localhost:8000"
+
 # Dataset name prefix - combined with project name for isolation
 cognee_dataset_prefix: "a0"
 
