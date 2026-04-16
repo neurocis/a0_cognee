@@ -20,6 +20,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 _DEFAULTS = {
+    "hindsight_base_url": "",  # Optional: Hindsight server URL for semantic search augmentation
     "cognee_base_url": "http://localhost:8000",
     "cognee_dataset_prefix": "a0",
     "cognee_retain_enabled": True,

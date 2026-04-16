@@ -1,5 +1,6 @@
 <div x-data="{
     config: {
+        hindsight_base_url: '',
         cognee_base_url: 'http://localhost:8000',
         cognee_dataset_prefix: 'a0',
         cognee_retain_enabled: true,
@@ -20,6 +21,19 @@
             Configure how Agent Zero interacts with the Cognee knowledge graph.
             Set optional <code>COGNEE_API_KEY</code> in <strong>Settings → Secrets</strong>.
         </p>
+        <!-- Hindsight Base URL (Optional) -->
+        <div class="settings-item">
+            <label for="hindsight_base_url">Hindsight Base URL (Optional)</label>
+            <input type="text"
+                   id="hindsight_base_url"
+                   x-model="config.hindsight_base_url"
+                   class="settings-input"
+                   placeholder="http://localhost:8888" />
+            <p class="settings-hint">
+                Optional: Base URL of your Hindsight memory server for semantic search augmentation.
+                Example: <code>http://localhost:8888</code> or <code>https://hindsight.example.com</code>.
+            </p>
+        </div>
 
         <!-- Cognee Base URL -->
         <div class="settings-item">
