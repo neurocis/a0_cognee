@@ -38,9 +38,11 @@ def config_changed(config: dict, agent=None, context=None, **kwargs) -> dict:
         validated_config = {}
 
         # Type validation and coercion
+        # Type validation and coercion
         expected_types = {
             "cognee_base_url": str,
             "cognee_dataset_prefix": str,
+            "cognee_dataset_id": str,
             "cognee_retain_enabled": bool,
             "cognee_recall_enabled": bool,
             "cognee_context_enabled": bool,

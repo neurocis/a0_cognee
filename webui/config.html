@@ -1,183 +1,493 @@
 <html>
 <head>
-    <title>Cognee Knowledge Memory Settings</title>
-    <script type="module">
-        import { store } from "/components/plugins/plugin-settings-store.js";
-    </script>
+    <title>Cognee Knowledge Memory Configuration</title>
 </head>
+
 <body>
-<div x-data>
+    <div x-data>
+        <template x-if="config">
+            <div>
+                <!-- ===== GLOBAL SETTINGS ===== -->
+                <div class="section-title">Cognee Server Configuration</div>
+                <div class="section-description">
+                    Augments Agent Zero's memory with
+                    <a href="https://www.cognee.ai/" target="_blank">Cognee</a>,
+                    an open-source AI memory platform combining vector search with graph databases.
+                    Retains, recalls, and contextualizes memories using 14+ search strategies.
+                </div>
 
-    <div class="settings-section">
-        <h3>Cognee Knowledge Memory</h3>
-        <p class="settings-description">
-            Configure how Agent Zero interacts with the Cognee knowledge graph.
-            Set optional <code>COGNEE_API_KEY</code> in <strong>Settings → Secrets</strong>.
-        </p>
+                <div class="section-description" style="margin-bottom: 1rem; padding: 0.5rem; background: var(--bg-secondary, #1a1a2e); border-radius: 6px; border-left: 3px solid var(--accent, #6c63ff);">
+                    <strong>⚙️ Global Settings</strong> — These apply to all projects.
+                    Switch to <strong>Default</strong> or any project to configure per-project settings below.
+                </div>
 
-        <!-- Cognee Base URL -->
-        <div class="settings-item">
-            <label for="cognee_base_url">Cognee Base URL</label>
-            <input type="text"
-                   id="cognee_base_url"
-                   x-model="config.cognee_base_url"
-                   class="settings-input"
-                   placeholder="http://localhost:8000" />
-            <p class="settings-hint">
-                Base URL of your Cognee API server (e.g., <code>http://localhost:8000</code>
-                or <code>https://cognee.example.com</code>).
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Cognee Base URL</div>
+                        <div class="field-description">
+                            The URL where your Cognee server is running.
+                            This setting is global — shared across all projects.
+                            Example: <code>http://localhost:8000</code> or <code>http://192.168.1.100:8000</code>
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.cognee_base_url"
+                               placeholder="http://localhost:8000" />
+                    </div>
+                </div>
 
-        <!-- Cognee Base URL -->
-        <div class="settings-item">
-            <label for="cognee_base_url">Cognee Base URL</label>
-            <input type="text"
-                   id="cognee_base_url"
-                   x-model="config.cognee_base_url"
-                   class="settings-input"
-                   placeholder="http://localhost:8000" />
-            <p class="settings-hint">
-                Base URL of your Cognee API server (e.g., <code>http://localhost:8000</code>
-                or <code>https://cognee.example.com</code>).
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Dataset Prefix</div>
+                        <div class="field-description">
+                            Prefix for Cognee dataset IDs.
+                            Combined with project name for isolation.
+                            This setting is global — shared across all projects.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.cognee_dataset_prefix"
+                               placeholder="a0" />
+                    </div>
+                </div>
 
-        <!-- Dataset Prefix -->
-        <div class="settings-item">
-            <label for="cognee_dataset_prefix">Dataset Prefix</label>
-            <input type="text"
-                   id="cognee_dataset_prefix"
-                   x-model="config.cognee_dataset_prefix"
-                   class="settings-input"
-                   placeholder="a0" />
-            <p class="settings-hint">
-                Combined with the project name to form the dataset identifier
-                (e.g., <code>a0-myproject</code>).
-            </p>
-        </div>
+                <!-- ===== PER-PROJECT SETTINGS ===== -->
+                <div style="margin-top: 1.5rem;"></div>
 
-        <!-- Feature Toggles -->
-        <div class="settings-item">
-            <label>
-                <input type="checkbox" x-model="config.cognee_retain_enabled" />
-                Enable Retain
-            </label>
-            <p class="settings-hint">
-                Automatically extract and store conversation knowledge in Cognee.
-            </p>
-        </div>
+                <div class="section-description" style="margin-bottom: 1rem; padding: 0.5rem; background: var(--bg-secondary, #1a1a2e); border-radius: 6px; border-left: 3px solid var(--success, #4caf50);">
+                    <strong>📁 Per-Project Settings</strong> — Use the project selector above to switch between
+                    <strong>Default</strong> (fallback for all projects) and individual project overrides.
+                </div>
 
-        <div class="settings-item">
-            <label>
-                <input type="checkbox" x-model="config.cognee_recall_enabled" />
-                Enable Recall
-            </label>
-            <p class="settings-hint">
-                Enrich agent responses with semantic/graph search from Cognee.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Explicit Dataset ID Override</div>
+                        <div class="field-description">
+                            Leave blank to auto-derive dataset ID from prefix + project name.
+                            Set to a specific name (e.g., "Agent0") to use that dataset instead of derived format.
+                            Per-project: each project can use a different dataset.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text"
+                               x-model="config.cognee_dataset_id"
+                               placeholder="Leave blank for auto-derivation" />
+                    </div>
+                </div>
 
-        <div class="settings-item">
-            <label>
-                <input type="checkbox" x-model="config.cognee_context_enabled" />
-                Enable Context Injection
-            </label>
-            <p class="settings-hint">
-                Inject knowledge graph context into the system prompt.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Retain</div>
+                        <div class="field-description">
+                            Store conversation knowledge to Cognee after each interaction.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_retain_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
 
-        <div class="settings-item">
-            <label>
-                <input type="checkbox" x-model="config.cognee_auto_cognify" />
-                Auto-Cognify
-            </label>
-            <p class="settings-hint">
-                Automatically build knowledge graph after retaining new data.
-                Disable for manual control over when cognification runs.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Recall</div>
+                        <div class="field-description">
+                            Enrich agent responses with Cognee semantic and graph-based search results.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_recall_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
 
-        <!-- Search Type -->
-        <div class="settings-item">
-            <label for="cognee_search_type">Search Type</label>
-            <select id="cognee_search_type"
-                    x-model="config.cognee_search_type"
-                    class="settings-select">
-                <option value="GRAPH_COMPLETION">Graph Completion (default)</option>
-                <option value="RAG_COMPLETION">RAG Completion</option>
-                <option value="GRAPH_COMPLETION_COT">Graph Chain-of-Thought</option>
-                <option value="GRAPH_SUMMARY_COMPLETION">Graph Summary</option>
-                <option value="TRIPLET_COMPLETION">Triplet Completion</option>
-                <option value="CHUNKS">Chunks (raw)</option>
-                <option value="SUMMARIES">Summaries</option>
-                <option value="FEELING_LUCKY">Feeling Lucky (auto)</option>
-            </select>
-            <p class="settings-hint">
-                Cognee search strategy for recall queries.
-                Graph Completion uses graph-aware Q&amp;A; RAG uses standard vector retrieval.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Context Injection</div>
+                        <div class="field-description">
+                            Inject knowledge graph context into the system prompt.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_context_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
 
-        <!-- Recall Max Tokens -->
-        <div class="settings-item">
-            <label for="cognee_recall_max_tokens">Recall Max Tokens</label>
-            <input type="number"
-                   id="cognee_recall_max_tokens"
-                   x-model.number="config.cognee_recall_max_tokens"
-                   class="settings-input"
-                   min="256"
-                   max="16384"
-                   step="256" />
-            <p class="settings-hint">
-                Maximum tokens to inject from recall search results.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Auto-Cognify</div>
+                        <div class="field-description">
+                            Automatically build knowledge graph after retaining new data.
+                            Disable for manual control over when cognification runs.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_auto_cognify" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
 
-        <!-- Context Max Tokens -->
-        <div class="settings-item">
-            <label for="cognee_context_max_tokens">Context Max Tokens</label>
-            <input type="number"
-                   id="cognee_context_max_tokens"
-                   x-model.number="config.cognee_context_max_tokens"
-                   class="settings-input"
-                   min="100"
-                   max="4096"
-                   step="100" />
-            <p class="settings-hint">
-                Maximum tokens for knowledge context injected into the system prompt.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Search Type</div>
+                        <div class="field-description">
+                            Cognee search strategy for recall queries.
+                            Graph Completion uses graph-aware Q&A; RAG uses standard vector retrieval.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="config.cognee_search_type">
+                            <option value="GRAPH_COMPLETION">Graph Completion (default)</option>
+                            <option value="RAG_COMPLETION">RAG Completion</option>
+                            <option value="GRAPH_COMPLETION_COT">Graph Chain-of-Thought</option>
+                            <option value="GRAPH_SUMMARY_COMPLETION">Graph Summary</option>
+                            <option value="TRIPLET_COMPLETION">Triplet Completion</option>
+                            <option value="CHUNKS">Chunks (raw)</option>
+                            <option value="SUMMARIES">Summaries</option>
+                            <option value="FEELING_LUCKY">Feeling Lucky (auto)</option>
+                        </select>
+                    </div>
+                </div>
 
-        <!-- Cache TTL -->
-        <div class="settings-item">
-            <label for="cognee_cache_ttl">Cache TTL (seconds)</label>
-            <input type="number"
-                   id="cognee_cache_ttl"
-                   x-model.number="config.cognee_cache_ttl"
-                   class="settings-input"
-                   min="0"
-                   max="3600"
-                   step="10" />
-            <p class="settings-hint">
-                How long to cache search results before re-querying Cognee.
-                Set to 0 to disable caching.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Recall Max Tokens</div>
+                        <div class="field-description">
+                            Maximum tokens to inject from recall search results.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.cognee_recall_max_tokens"
+                               placeholder="4096" />
+                    </div>
+                </div>
 
-        <!-- Debug -->
-        <div class="settings-item">
-            <label>
-                <input type="checkbox" x-model="config.cognee_debug" />
-                Debug Logging
-            </label>
-            <p class="settings-hint">
-                Enable verbose logging for troubleshooting Cognee integration.
-            </p>
-        </div>
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Context Max Tokens</div>
+                        <div class="field-description">
+                            Maximum tokens for knowledge context injected into the system prompt.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.cognee_context_max_tokens"
+                               placeholder="500" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Context Cache TTL (seconds)</div>
+                        <div class="field-description">
+                            How long to cache search results before re-querying Cognee.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number"
+                               x-model.number="config.cognee_cache_ttl"
+                               placeholder="120" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Debug Logging</div>
+                        <div class="field-description">
+                            Enable verbose logging for troubleshooting Cognee integration.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_debug" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="settings-actions">
+                    <button @click="saveConfig()" class="settings-save-btn">
+                        💾 Save Configuration
+                    </button>
+                    <p id="save-message" class="settings-message" style="display: none;"></p>
+                </div>
+            </div>
+        </template>
     </div>
 
-</div>
+    <script>
+        function saveConfig() {
+            const btn = document.querySelector('.settings-save-btn');
+            const msg = document.getElementById('save-message');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Saving...';
+            msg.style.display = 'none';
+            
+            // Send config to backend
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Plugin-Config': 'a0_cognee'
+                },
+                body: JSON.stringify({
+                    action: 'save_config',
+                    config: Alpine.$data(document.querySelector('[x-data]')).config
+                })
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    msg.className = 'settings-message success';
+                    msg.textContent = '✅ Configuration saved successfully';
+                } else {
+                    msg.className = 'settings-message error';
+                    msg.textContent = `❌ Save failed: ${data.error || 'Unknown error'}`;
+                }
+                msg.style.display = 'block';
+            })
+            .catch(err => {
+                msg.className = 'settings-message error';
+                msg.textContent = `❌ Error: ${err.message}`;
+                msg.style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
+        }
+    </script>
+
+    <style>
+        :root {
+            --accent: #6c63ff;
+            --success: #4caf50;
+            --bg-secondary: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+
+        .section-description {
+            font-size: 0.95rem;
+            color: #a0a0a0;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .section-description a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .section-description a:hover {
+            text-decoration: underline;
+        }
+
+        .field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .field:last-of-type {
+            border-bottom: none;
+        }
+
+        .field-label {
+            flex: 1;
+            min-width: 0;
+            margin-right: 2rem;
+        }
+
+        .field-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .field-description {
+            font-size: 0.85rem;
+            color: #808080;
+            line-height: 1.4;
+        }
+
+        .field-description code {
+            background: var(--bg-secondary);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: var(--accent);
+        }
+
+        .field-control {
+            flex: 0 0 auto;
+            min-width: 250px;
+        }
+
+        .field-control input[type="text"],
+        .field-control input[type="number"],
+        .field-control select {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .field-control input[type="text"]:focus,
+        .field-control input[type="number"]:focus,
+        .field-control select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggler {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggler:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggler {
+            background-color: var(--success);
+        }
+
+        input:checked + .toggler:before {
+            transform: translateX(26px);
+        }
+
+        .settings-actions {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .settings-save-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+
+        .settings-save-btn:hover {
+            background: #45a049;
+        }
+
+        .settings-save-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .settings-message {
+            margin-top: 1rem;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .settings-message.success {
+            background: #1e4620;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .settings-message.error {
+            background: #4a1a1a;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+
+        @media (max-width: 768px) {
+            .field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .field-label {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+
+            .field-control {
+                min-width: 100%;
+            }
+        }
+    </style>
 </body>
 </html>

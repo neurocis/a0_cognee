@@ -10,6 +10,9 @@ hindsight_base_url: ""
 # Dataset name prefix - combined with project name for isolation
 cognee_dataset_prefix: "a0"
 
+# Explicit dataset ID override (leave empty for auto-derivation)
+cognee_dataset_id: ""
+
 # Enable/disable individual features
 cognee_retain_enabled: true
 cognee_recall_enabled: true
