@@ -15,17 +15,17 @@
             Set optional <code>COGNEE_API_KEY</code> in <strong>Settings → Secrets</strong>.
         </p>
 
-        <!-- Hindsight Base URL (Optional) -->
+        <!-- Cognee Base URL -->
         <div class="settings-item">
-            <label for="hindsight_base_url">Hindsight Base URL (Optional)</label>
+            <label for="cognee_base_url">Cognee Base URL</label>
             <input type="text"
-                   id="hindsight_base_url"
-                   x-model="config.hindsight_base_url"
+                   id="cognee_base_url"
+                   x-model="config.cognee_base_url"
                    class="settings-input"
-                   placeholder="http://localhost:8888" />
+                   placeholder="http://localhost:8000" />
             <p class="settings-hint">
-                Optional: Base URL of your Hindsight memory server for semantic search augmentation.
-                Example: <code>http://localhost:8888</code> or <code>https://hindsight.example.com</code>.
+                Base URL of your Cognee API server (e.g., <code>http://localhost:8000</code>
+                or <code>https://cognee.example.com</code>).
             </p>
         </div>
 
