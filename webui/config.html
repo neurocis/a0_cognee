@@ -1,19 +1,12 @@
-<div x-data="{
-    config: {
-        hindsight_base_url: '',
-        cognee_base_url: 'http://localhost:8000',
-        cognee_dataset_prefix: 'a0',
-        cognee_retain_enabled: true,
-        cognee_recall_enabled: true,
-        cognee_context_enabled: true,
-        cognee_search_type: 'GRAPH_COMPLETION',
-        cognee_recall_max_tokens: 4096,
-        cognee_auto_cognify: true,
-        cognee_cache_ttl: 120,
-        cognee_context_max_tokens: 500,
-        cognee_debug: false
-    }
-}">
+<html>
+<head>
+    <title>Cognee Knowledge Memory Settings</title>
+    <script type="module">
+        import { store } from "/components/plugins/plugin-settings-store.js";
+    </script>
+</head>
+<body>
+<div x-data>
 
     <div class="settings-section">
         <h3>Cognee Knowledge Memory</h3>
@@ -21,6 +14,7 @@
             Configure how Agent Zero interacts with the Cognee knowledge graph.
             Set optional <code>COGNEE_API_KEY</code> in <strong>Settings → Secrets</strong>.
         </p>
+
         <!-- Hindsight Base URL (Optional) -->
         <div class="settings-item">
             <label for="hindsight_base_url">Hindsight Base URL (Optional)</label>
@@ -122,7 +116,7 @@
             </select>
             <p class="settings-hint">
                 Cognee search strategy for recall queries.
-                Graph Completion uses graph-aware Q&A; RAG uses standard vector retrieval.
+                Graph Completion uses graph-aware Q&amp;A; RAG uses standard vector retrieval.
             </p>
         </div>
 
@@ -182,99 +176,8 @@
                 Enable verbose logging for troubleshooting Cognee integration.
             </p>
         </div>
-
-        <!-- Save Button -->
-        <div class="settings-actions">
-            <button @click="saveConfig()" class="settings-save-btn">
-                💾 Save Configuration
-            </button>
-            <p id="save-message" class="settings-message" style="display: none;"></p>
-        </div>
     </div>
 
-    <script>
-        function saveConfig() {
-            const btn = document.querySelector('.settings-save-btn');
-            const msg = document.getElementById('save-message');
-            const originalText = btn.textContent;
-            
-            btn.disabled = true;
-            btn.textContent = '⏳ Saving...';
-            msg.style.display = 'none';
-            
-            // Send config to backend
-            fetch(window.location.href, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Plugin-Config': 'a0_cognee'
-                },
-                body: JSON.stringify({
-                    action: 'save_config',
-                    config: Alpine.$data(document.querySelector('[x-data]')).config
-                })
-            })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.success) {
-                    msg.className = 'settings-message success';
-                    msg.textContent = '✅ Configuration saved successfully';
-                } else {
-                    msg.className = 'settings-message error';
-                    msg.textContent = `❌ Save failed: ${data.error || 'Unknown error'}`;
-                }
-                msg.style.display = 'block';
-            })
-            .catch(err => {
-                msg.className = 'settings-message error';
-                msg.textContent = `❌ Error: ${err.message}`;
-                msg.style.display = 'block';
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            });
-        }
-    </script>
-
-    <style>
-        .settings-actions {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #ddd;
-        }
-        .settings-save-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.3s;
-        }
-        .settings-save-btn:hover {
-            background: #45a049;
-        }
-        .settings-save-btn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        .settings-message {
-            margin-top: 1rem;
-            padding: 10px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .settings-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .settings-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
 </div>
+</body>
+</html>
