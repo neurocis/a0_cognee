@@ -182,5 +182,99 @@
                 Enable verbose logging for troubleshooting Cognee integration.
             </p>
         </div>
+
+        <!-- Save Button -->
+        <div class="settings-actions">
+            <button @click="saveConfig()" class="settings-save-btn">
+                💾 Save Configuration
+            </button>
+            <p id="save-message" class="settings-message" style="display: none;"></p>
+        </div>
     </div>
+
+    <script>
+        function saveConfig() {
+            const btn = document.querySelector('.settings-save-btn');
+            const msg = document.getElementById('save-message');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Saving...';
+            msg.style.display = 'none';
+            
+            // Send config to backend
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Plugin-Config': 'a0_cognee'
+                },
+                body: JSON.stringify({
+                    action: 'save_config',
+                    config: Alpine.$data(document.querySelector('[x-data]')).config
+                })
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    msg.className = 'settings-message success';
+                    msg.textContent = '✅ Configuration saved successfully';
+                } else {
+                    msg.className = 'settings-message error';
+                    msg.textContent = `❌ Save failed: ${data.error || 'Unknown error'}`;
+                }
+                msg.style.display = 'block';
+            })
+            .catch(err => {
+                msg.className = 'settings-message error';
+                msg.textContent = `❌ Error: ${err.message}`;
+                msg.style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
+        }
+    </script>
+
+    <style>
+        .settings-actions {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #ddd;
+        }
+        .settings-save-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        .settings-save-btn:hover {
+            background: #45a049;
+        }
+        .settings-save-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .settings-message {
+            margin-top: 1rem;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .settings-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .settings-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
 </div>
