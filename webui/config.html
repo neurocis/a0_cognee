@@ -320,9 +320,10 @@
         .field {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             padding: 1rem 0;
             border-bottom: 1px solid var(--border-color);
+            gap: 2rem;
         }
 
         .field:last-of-type {
@@ -332,7 +333,7 @@
         .field-label {
             flex: 1;
             min-width: 0;
-            margin-right: 2rem;
+            padding-top: 0.25rem;
         }
 
         .field-title {
@@ -357,8 +358,8 @@
         }
 
         .field-control {
-            flex: 0 0 auto;
-            min-width: 250px;
+            flex: 1;
+            min-width: 0;
         }
 
         .field-control input[type="text"],

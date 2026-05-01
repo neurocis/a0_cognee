@@ -5,7 +5,6 @@
 cognee_base_url: "http://localhost:8000"
 
 # Hindsight memory augmentation (optional)
-hindsight_base_url: ""
 
 # Dataset name prefix - combined with project name for isolation
 cognee_dataset_prefix: "a0"

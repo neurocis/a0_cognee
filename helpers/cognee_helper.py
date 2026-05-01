@@ -20,7 +20,6 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 _DEFAULTS = {
-    "hindsight_base_url": "",  # Optional: Hindsight server URL for semantic search augmentation
     "cognee_base_url": "http://localhost:8000",
     "cognee_dataset_prefix": "a0",
     "cognee_retain_enabled": True,
@@ -173,6 +172,13 @@ def _get_headers(agent) -> dict:
     api_key = get_api_key(agent)
     if api_key:
         headers["X-Api-Key"] = api_key
+    
+    # Check for OAuth2 access token from environment
+    import os
+    access_token = os.environ.get("COGNEE_ACCESS_TOKEN")
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+    
     return headers
 
 
@@ -237,7 +243,7 @@ async def _api_request(
 
 async def health_check(agent) -> dict:
     """Check Cognee server health."""
-    return await _api_request(agent, "GET", "/api/health", timeout=5)
+    return await _api_request(agent, "GET", "/health", timeout=5)
 
 
 async def add_data(
@@ -267,7 +273,7 @@ async def add_data(
     result = await _api_request(
         agent,
         "POST",
-        "/api/add",
+        "/api/v1/add",
         data={"data": content, "dataset_name": ds_name},
         timeout=30,
     )
@@ -298,11 +304,12 @@ async def cognify(
         _log(context, f"Cognifying dataset '{ds_name}'...")
 
     # Build request - cognify can take a while
+    # Build request - cognify can take a while
     data = {"datasets": [ds_name]} if ds_name else {}
     result = await _api_request(
         agent,
         "POST",
-        "/api/cognify",
+        "/api/v1/cognify",
         data=data,
         timeout=120,  # Cognify can be slow
     )
