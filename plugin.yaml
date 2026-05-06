@@ -8,7 +8,7 @@ description: >
   enriches recall with semantic and graph-based search, and injects
   knowledge context into the system prompt. Supports 14+ search strategies
   including graph completion, RAG, and chain-of-thought reasoning.
-version: 1.4.2
+version: 1.5.0
 settings_sections:
   - agent
 per_project_config: true

@@ -15,7 +15,7 @@ class CogneeInit(Extension):
             return
 
         try:
-            from helpers.cognee_helper import is_configured, get_dataset_name, _log
+            from helpers.cognee_helper import is_configured, get_dataset_name, _log, _get_bearer_token, get_base_url
 
             context = self.agent.context
 
@@ -23,11 +23,21 @@ class CogneeInit(Extension):
                 context._cognee = {"enabled": False, "reason": "not configured"}
                 return
 
+            # Authenticate with Cognee using OAuth2 Password Grant
+            base_url = get_base_url(self.agent)
+            token, auth_success = await _get_bearer_token(self.agent, base_url)
+            
+            if not auth_success:
+                context._cognee = {"enabled": False, "reason": "authentication failed - check COGNEE_USERNAME and COGNEE_PASSWORD in Project Secrets"}
+                _log(context, "❌ Authentication failed. Ensure COGNEE_USERNAME and COGNEE_PASSWORD are set in Project Secrets and match Cognee's DEFAULT_USER_EMAIL/PASSWORD.", "error")
+                return
+
             dataset_name = get_dataset_name(self.agent)
             context._cognee = {
                 "enabled": True,
                 "dataset": dataset_name,
                 "retained_count": 0,
+                "authenticated": True,
             }
 
             from helpers.cognee_helper import _get_plugin_config
@@ -36,7 +46,7 @@ class CogneeInit(Extension):
             if config.get("cognee_debug", False):
                 _log(
                     context,
-                    f"Initialized: dataset='{dataset_name}', "
+                    f"✅ Initialized & Authenticated: dataset='{dataset_name}', "
                     f"retain={config.get('cognee_retain_enabled')}, "
                     f"recall={config.get('cognee_recall_enabled')}, "
                     f"context={config.get('cognee_context_enabled')}",

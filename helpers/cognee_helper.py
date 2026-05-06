@@ -6,7 +6,9 @@ client caching, and core operations (add, cognify, search).
 
 import time
 import json
+import asyncio
 from typing import Any, Optional
+from datetime import datetime, timedelta
 
 try:
     import aiohttp
@@ -42,8 +44,12 @@ _context_cache: dict[str, dict[str, Any]] = {}
 # Cognify tracking: datasets that have been cognified this session
 _cognified_datasets: set[str] = set()
 
+# Bearer token cache: keyed by base_url, stores (token, expiry_time)
+_bearer_tokens: dict[str, tuple[str, float]] = {}
 
-# ---------------------------------------------------------------------------
+# Auth lock: prevents concurrent auth attempts
+_auth_locks: dict[str, asyncio.Lock] = {}
+
 # Logging
 # ---------------------------------------------------------------------------
 
@@ -129,6 +135,79 @@ def get_api_key(agent) -> str:
         key = os.environ.get("COGNEE_API_KEY", "")
     return key
 
+def get_credentials(agent) -> tuple[str, str]:
+    """Get Cognee username and password from secrets."""
+    context = agent.context if hasattr(agent, "context") else None
+    username = _get_secret(context, "COGNEE_USERNAME", "")
+    password = _get_secret(context, "COGNEE_PASSWORD", "")
+    if not username:
+        import os
+        username = os.environ.get("COGNEE_USERNAME", "")
+    if not password:
+        import os
+        password = os.environ.get("COGNEE_PASSWORD", "")
+    return username, password
+
+
+async def _get_bearer_token(agent, base_url: str, force_refresh: bool = False) -> tuple[str, bool]:
+    """Get or refresh Cognee bearer token using OAuth2 Password Grant.
+    
+    Returns:
+        (token, success) where token is empty string if auth fails
+    """
+    if not force_refresh and base_url in _bearer_tokens:
+        token, expiry = _bearer_tokens[base_url]
+        if time.time() < expiry:
+            return token, True
+    
+    # Get auth lock for this base_url
+    if base_url not in _auth_locks:
+        _auth_locks[base_url] = asyncio.Lock()
+    
+    async with _auth_locks[base_url]:
+        # Double-check after acquiring lock
+        if not force_refresh and base_url in _bearer_tokens:
+            token, expiry = _bearer_tokens[base_url]
+            if time.time() < expiry:
+                return token, True
+        
+        username, password = get_credentials(agent)
+        if not username or not password:
+            return "", False
+        
+        session = await _get_session(base_url)
+        url = f"{base_url}/api/v1/auth/login"
+        
+        try:
+            req_timeout = aiohttp.ClientTimeout(total=10)
+            
+            # OAuth2 Password Grant: form-urlencoded
+            data = {
+                "username": username,
+                "password": password,
+            }
+            
+            async with session.post(
+                url,
+                data=data,
+                timeout=req_timeout,
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            ) as resp:
+                status = resp.status
+                body = await resp.json() if status < 400 else await resp.text()
+                
+                if status == 200 and isinstance(body, dict):
+                    token = body.get("access_token") or body.get("token")
+                    if token:
+                        # Cache token with 30-minute expiry (default JWT lifetime)
+                        _bearer_tokens[base_url] = (token, time.time() + 1800)
+                        return token, True
+                
+                # Auth failed
+                return "", False
+        except Exception as e:
+            return "", False
+
 
 def is_configured(agent) -> bool:
     """Check if Cognee is available and configured."""
@@ -137,28 +216,59 @@ def is_configured(agent) -> bool:
     return bool(get_base_url(agent))
 
 
-def get_dataset_name(agent) -> str:
-    """Derive the dataset name from config prefix and project."""
+def get_dataset_name(agent, context=None) -> str:
+    """Derive the dataset name from config and active project.
+
+    Resolution priority:
+    1. Explicit `cognee_dataset_id` config override (matches Hindsight's
+       `hindsight_bank_id` semantics).
+    2. `<prefix>-<active-project-slug>` using the framework's project API
+       (`helpers.projects.get_context_project_name`), which works correctly
+       for both superior agents and subordinates spawned via
+       `tools/call_subordinate.py` (they share the same `AgentContext`).
+    3. `<prefix>-default` when no project is active.
+
+    The `agent` argument is used to resolve plugin config against the
+    *current* running agent's profile so per-profile overrides apply to
+    subordinates — Option 2 fix mirrored from a0_hindsight.
+    """
     config = _get_plugin_config(agent)
-    prefix = config.get("cognee_dataset_prefix", "a0")
 
-    # Get project name
-    project_name = "default"
-    try:
-        if hasattr(agent, "context") and hasattr(agent.context, "project"):
-            proj = agent.context.project
-            if proj and hasattr(proj, "name") and proj.name:
-                project_name = proj.name
-            elif proj and hasattr(proj, "title") and proj.title:
-                project_name = proj.title
-    except Exception:
-        pass
+    # 1. Explicit override wins. Field is declared in hooks.py
+    #    expected_types but was previously never read — fix.
+    explicit = (config.get("cognee_dataset_id") or "").strip()
+    if explicit:
+        return explicit
 
-    # Sanitize: lowercase, replace spaces/special chars with hyphens
+    prefix = config.get("cognee_dataset_prefix", "a0") or "a0"
+
+    # 2. Resolve project name via the framework's data API.
+    #    AgentContext has NO `.project` attribute — only
+    #    `context.data['project']` (a string), accessed via
+    #    `context.get_data('project')`. The previous code path
+    #    `agent.context.project.name/title` was always falsy and
+    #    silently fell through to 'default' for every chat,
+    #    which is the root cause of subordinates (and superiors)
+    #    not knowing the right dataset.
+    ctx = context
+    if ctx is None and hasattr(agent, "context"):
+        ctx = agent.context
+
+    project_name = None
+    if ctx is not None:
+        try:
+            from helpers.projects import get_context_project_name
+            project_name = get_context_project_name(ctx)
+        except Exception:
+            project_name = None
+
+    if not project_name:
+        return f"{prefix}-default"
+
+    # Sanitize: lowercase, replace non-alphanumerics with hyphens
     import re
-
-    project_name = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-")
-    return f"{prefix}-{project_name}" if project_name else prefix
+    slug = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-")
+    return f"{prefix}-{slug}" if slug else f"{prefix}-default"
 
 
 # ---------------------------------------------------------------------------
@@ -166,8 +276,8 @@ def get_dataset_name(agent) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _get_headers(agent) -> dict:
-    """Build HTTP headers for Cognee API requests."""
+async def _get_headers(agent, base_url: str) -> dict:
+    """Build HTTP headers for Cognee API requests with bearer token."""
     headers = {"Content-Type": "application/json"}
     api_key = get_api_key(agent)
     if api_key:
@@ -202,13 +312,14 @@ async def _api_request(
     data: Optional[dict] = None,
     params: Optional[dict] = None,
     timeout: int = 30,
+    retry_on_401: bool = True,
 ) -> dict:
-    """Make an HTTP request to the Cognee API."""
+    """Make an HTTP request to the Cognee API with automatic bearer token refresh on 401."""
     base_url = get_base_url(agent)
     if not base_url:
         return {"error": "COGNEE_BASE_URL not configured"}
 
-    headers = _get_headers(agent)
+    headers = await _get_headers(agent, base_url)
     url = f"{base_url}{path}"
     session = await _get_session(base_url)
 
@@ -223,6 +334,31 @@ async def _api_request(
             except Exception:
                 body = await resp.text()
 
+            # On 401, refresh token and retry once
+            if status == 401 and retry_on_401:
+                # Force refresh the bearer token
+                token, success = await _get_bearer_token(agent, base_url, force_refresh=True)
+                if success and token:
+                    # Update headers with new token
+                    headers = await _get_headers(agent, base_url)
+                    # Retry the request
+                    async with session.request(
+                        method, url, json=data, params=params, headers=headers, timeout=req_timeout
+                    ) as retry_resp:
+                        status = retry_resp.status
+                        try:
+                            body = await retry_resp.json()
+                        except Exception:
+                            body = await retry_resp.text()
+                        
+                        if status >= 400:
+                            return {
+                                "error": f"HTTP {status}",
+                                "detail": body,
+                                "url": url,
+                            }
+                        return {"status": status, "data": body}
+
             if status >= 400:
                 return {
                     "error": f"HTTP {status}",
@@ -234,7 +370,6 @@ async def _api_request(
         return {"error": f"Connection error: {e}", "url": url}
     except Exception as e:
         return {"error": f"Request failed: {e}", "url": url}
-
 
 # ---------------------------------------------------------------------------
 # Core Operations
