@@ -13,3 +13,7 @@ venv/
 *~
 .DS_Store
 Thumbs.db
+
+# Plugin runtime artifacts (per-install state, not source)
+config.json
+execute_record.json
