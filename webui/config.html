@@ -225,6 +225,122 @@
                     </div>
                 </div>
 
+                <!-- ─── Verbose Feedback Mode ─── -->
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Verbose Mode</div>
+                        <div class="field-description">
+                            Emit structured feedback events for init/recall/retain/context
+                            operations, similar to FAISS memory sections. Disabled by default
+                            to keep normal conversations clean.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Include Dataset</div>
+                        <div class="field-description">
+                            Include the dataset name in verbose events.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_include_dataset" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Include Recall Count</div>
+                        <div class="field-description">
+                            Include approximate recall result counts in verbose events.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_include_recall_count" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Include Retain Status</div>
+                        <div class="field-description">
+                            Include retain item counts and success status in verbose events.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_include_retain_status" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Include Prompt Injection Status</div>
+                        <div class="field-description">
+                            Include whether the verbose event was injected into the prompt.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_include_prompt_injection_status" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Emit to Prompt</div>
+                        <div class="field-description">
+                            Append a `# Cognee Verbose` markdown block to the prompt when emitting.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_emit_to_prompt" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.cognee_verbose">
+                    <div class="field-label">
+                        <div class="field-title">Verbose: Emit to Log</div>
+                        <div class="field-description">
+                            Write each verbose event to the A0 util log channel.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox"
+                                   x-model="config.cognee_verbose_emit_to_log" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+
                 <!-- Save Button -->
                 <div class="settings-actions">
                     <button @click="saveConfig()" class="settings-save-btn">

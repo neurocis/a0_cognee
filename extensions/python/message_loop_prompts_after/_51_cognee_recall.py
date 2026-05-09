@@ -27,6 +27,9 @@ class CogneeRecall(Extension):
                 search,
                 format_search_results,
                 _log,
+                emit_verbose_event,
+                format_verbose_event,
+                should_emit_verbose_to_prompt,
             )
 
             config = _get_plugin_config(self.agent)
@@ -76,31 +79,74 @@ class CogneeRecall(Extension):
             if "error" in result:
                 if debug:
                     _log(context, f"Recall search error: {result['error']}", "warning")
+                # Emit a verbose event so the user sees the failure when verbose enabled
+                emit_verbose_event(
+                    self.agent,
+                    "recall",
+                    {
+                        "results_count": 0,
+                        "injected_into_prompt": False,
+                        "success": False,
+                        "error": str(result.get("error")),
+                    },
+                    context=context,
+                )
                 return
 
             # Format and inject results
             max_tokens = config.get("cognee_recall_max_tokens", 4096)
             formatted = format_search_results(result, max_tokens=max_tokens)
 
-            if not formatted or not formatted.strip():
-                return
+            # Approximate result count: count non-empty lines, fallback to 1
+            results_count = 0
+            if formatted and formatted.strip():
+                lines = [ln for ln in formatted.splitlines() if ln.strip()]
+                results_count = len(lines) if lines else 1
 
-            # Inject via prompt template into extras_persistent
-            try:
-                prompt_text = self.agent.read_prompt(
-                    "cognee.recall.md", recall_results=formatted
-                )
-                if prompt_text and prompt_text.strip():
-                    if hasattr(loop_data, "extras_persistent"):
-                        loop_data.extras_persistent["cognee_memories"] = prompt_text
+            injected_into_prompt = False
+
+            if formatted and formatted.strip():
+                # Inject via prompt template into extras_persistent
+                try:
+                    prompt_text = self.agent.read_prompt(
+                        "cognee.recall.md", recall_results=formatted
+                    )
+                    if prompt_text and prompt_text.strip():
+                        if hasattr(loop_data, "extras_persistent"):
+                            loop_data.extras_persistent["cognee_memories"] = prompt_text
+                            injected_into_prompt = True
+                        if debug:
+                            _log(
+                                context,
+                                f"Injected {len(formatted)} chars of recall results",
+                            )
+                except Exception as e:
                     if debug:
-                        _log(
-                            context,
-                            f"Injected {len(formatted)} chars of recall results",
-                        )
-            except Exception as e:
-                if debug:
-                    _log(context, f"Recall prompt error: {e}", "warning")
+                        _log(context, f"Recall prompt error: {e}", "warning")
+            else:
+                # Clear stale memories when recall finds nothing
+                if hasattr(loop_data, "extras_persistent"):
+                    loop_data.extras_persistent.pop("cognee_memories", None)
+
+            # Emit verbose feedback event (no-op when verbose mode disabled)
+            verbose_event = emit_verbose_event(
+                self.agent,
+                "recall",
+                {
+                    "results_count": results_count,
+                    "injected_into_prompt": injected_into_prompt,
+                    "success": True,
+                },
+                context=context,
+            )
+            if verbose_event and should_emit_verbose_to_prompt(self.agent):
+                if hasattr(loop_data, "extras_persistent"):
+                    loop_data.extras_persistent["cognee_verbose"] = (
+                        format_verbose_event(verbose_event)
+                    )
+            else:
+                if hasattr(loop_data, "extras_persistent"):
+                    loop_data.extras_persistent.pop("cognee_verbose", None)
 
         except Exception as e:
             try:

@@ -33,6 +33,17 @@ _DEFAULTS = {
     "cognee_cache_ttl": 120,
     "cognee_context_max_tokens": 500,
     "cognee_debug": False,
+    # ── Verbose feedback mode (disabled by default) ─────────
+    # When enabled, Cognee extensions emit structured events for
+    # init/recall/retain/context operations so users can observe what
+    # the plugin is doing, similar to FAISS-derived memory sections.
+    "cognee_verbose": False,
+    "cognee_verbose_include_dataset": True,
+    "cognee_verbose_include_recall_count": True,
+    "cognee_verbose_include_retain_status": True,
+    "cognee_verbose_include_prompt_injection_status": True,
+    "cognee_verbose_emit_to_prompt": True,
+    "cognee_verbose_emit_to_log": True,
 }
 
 # Session cache: keyed by base_url
@@ -633,6 +644,127 @@ def format_search_results(result: dict, max_tokens: int = 4096) -> str:
         return content[:max_tokens * 4] if len(content) > max_tokens * 4 else content
 
     return str(data)[:max_tokens * 4]
+
+
+# ---------------------------------------------------------------------------
+# Verbose Feedback Helpers
+# ---------------------------------------------------------------------------
+#
+# Optional structured feedback for Cognee operations. Disabled by
+# default; enabled via the cognee_verbose plugin config flag.
+# Designed to give FAISS-style observability (recall counts, retain
+# success, dataset names) without polluting normal conversations.
+
+
+def _verbose_options(agent) -> dict:
+    """Resolve the verbose-mode option set for the calling agent."""
+    cfg = _get_plugin_config(agent)
+    return {
+        "enabled": bool(cfg.get("cognee_verbose", False)),
+        "include_dataset": bool(cfg.get("cognee_verbose_include_dataset", True)),
+        "include_recall_count": bool(cfg.get("cognee_verbose_include_recall_count", True)),
+        "include_retain_status": bool(cfg.get("cognee_verbose_include_retain_status", True)),
+        "include_prompt_injection_status": bool(
+            cfg.get("cognee_verbose_include_prompt_injection_status", True)
+        ),
+        "emit_to_prompt": bool(cfg.get("cognee_verbose_emit_to_prompt", True)),
+        "emit_to_log": bool(cfg.get("cognee_verbose_emit_to_log", True)),
+    }
+
+
+def is_verbose_enabled(agent=None, context=None) -> bool:
+    """Return True when the verbose feedback mode is enabled for this agent."""
+    return _verbose_options(agent)["enabled"]
+
+
+def build_verbose_event(
+    agent,
+    event: str,
+    payload: Optional[dict] = None,
+    context=None,
+) -> dict:
+    """Construct a structured Cognee verbose event dict.
+
+    Honors include_* options so each field is only present when the
+    operator wants it. Always sets `source` and `event`.
+    """
+    payload = dict(payload or {})
+    options = _verbose_options(agent)
+
+    data: dict = {
+        "source": "cognee",
+        "event": event,
+    }
+
+    if options["include_dataset"]:
+        dataset = payload.pop("dataset", None)
+        if dataset is None and agent is not None:
+            try:
+                dataset = get_dataset_name(agent, context=context)
+            except Exception:
+                dataset = None
+        if dataset:
+            data["dataset"] = dataset
+    else:
+        payload.pop("dataset", None)
+
+    if not options["include_recall_count"]:
+        payload.pop("results_count", None)
+    if not options["include_retain_status"]:
+        payload.pop("items_count", None)
+        # `success` is still useful for non-retain events; only strip on retain
+        if event == "retain":
+            payload.pop("success", None)
+    if not options["include_prompt_injection_status"]:
+        payload.pop("injected_into_prompt", None)
+
+    data.update(payload)
+    return data
+
+
+def format_verbose_event(event: dict) -> str:
+    """Render a verbose event dict as a `# Cognee Verbose` markdown block."""
+    lines = ["# Cognee Verbose"]
+    for key, value in event.items():
+        lines.append(f"- {key}: {value}")
+    return "\n".join(lines)
+
+
+def emit_verbose_event(
+    agent,
+    event: str,
+    payload: Optional[dict] = None,
+    context=None,
+) -> Optional[dict]:
+    """Build, log, and return a verbose event when verbose mode is enabled.
+
+    Returns the event dict on success, or None if verbose mode is disabled.
+    Callers that want to inject the event into prompt text should check
+    `should_emit_verbose_to_prompt(agent)` and call
+    `format_verbose_event(...)` themselves.
+    """
+    options = _verbose_options(agent)
+    if not options["enabled"]:
+        return None
+
+    verbose_event = build_verbose_event(agent, event, payload=payload, context=context)
+
+    if options["emit_to_log"]:
+        try:
+            _log(context, f"verbose: {verbose_event}", "util")
+        except Exception:
+            try:
+                print(f"[cognee verbose] {verbose_event}")
+            except Exception:
+                pass
+
+    return verbose_event
+
+
+def should_emit_verbose_to_prompt(agent=None) -> bool:
+    """Convenience predicate for extensions deciding whether to inject prompt text."""
+    options = _verbose_options(agent)
+    return options["enabled"] and options["emit_to_prompt"]
 
 
 # ---------------------------------------------------------------------------

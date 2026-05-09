@@ -30,3 +30,24 @@ cognee_context_max_tokens: 500
 
 # Debug logging
 cognee_debug: false
+
+# ─── Verbose Feedback Mode ──────────────────────────────────
+#
+# When enabled, Cognee extensions emit structured feedback events
+# for init/recall/retain/context operations, similar to how the
+# built-in FAISS memory exposes "Memories on the topic" and
+# "Solutions from the past" sections. Disabled by default to keep
+# normal conversations clean.
+
+# Master switch for verbose mode
+cognee_verbose: false
+
+# Per-field controls for verbose events
+cognee_verbose_include_dataset: true
+cognee_verbose_include_recall_count: true
+cognee_verbose_include_retain_status: true
+cognee_verbose_include_prompt_injection_status: true
+
+# Output channels for verbose events
+cognee_verbose_emit_to_prompt: true
+cognee_verbose_emit_to_log: true

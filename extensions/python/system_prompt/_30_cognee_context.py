@@ -27,6 +27,9 @@ class CogneeContext(Extension):
                 search,
                 format_search_results,
                 _log,
+                emit_verbose_event,
+                format_verbose_event,
+                should_emit_verbose_to_prompt,
             )
 
             config = _get_plugin_config(self.agent)
@@ -62,34 +65,57 @@ class CogneeContext(Extension):
                 context=context,
             )
 
+            injected_into_prompt = False
+            success = True
+            error_msg = None
+
             if "error" in result:
                 if debug:
                     _log(context, f"Context search error: {result['error']}", "warning")
-                return
+                success = False
+                error_msg = str(result.get("error"))
+                formatted = ""
+            else:
+                # Format results
+                max_tokens = config.get("cognee_context_max_tokens", 500)
+                formatted = format_search_results(result, max_tokens=max_tokens)
 
-            # Format results
-            max_tokens = config.get("cognee_context_max_tokens", 500)
-            formatted = format_search_results(result, max_tokens=max_tokens)
+            system_prompt = kwargs.get("system_prompt", [])
 
-            if not formatted or not formatted.strip():
-                return
-
-            # Inject into system prompt via template
-            try:
-                prompt_text = self.agent.read_prompt(
-                    "cognee.context.md", knowledge_context=formatted
-                )
-                if prompt_text and prompt_text.strip():
-                    system_prompt = kwargs.get("system_prompt", [])
-                    system_prompt.append(prompt_text)
+            if formatted and formatted.strip():
+                # Inject into system prompt via template
+                try:
+                    prompt_text = self.agent.read_prompt(
+                        "cognee.context.md", knowledge_context=formatted
+                    )
+                    if prompt_text and prompt_text.strip():
+                        system_prompt.append(prompt_text)
+                        injected_into_prompt = True
+                        if debug:
+                            _log(
+                                context,
+                                f"Injected {len(formatted)} chars of knowledge context",
+                            )
+                except Exception as e:
                     if debug:
-                        _log(
-                            context,
-                            f"Injected {len(formatted)} chars of knowledge context",
-                        )
-            except Exception as e:
-                if debug:
-                    _log(context, f"Prompt template error: {e}", "warning")
+                        _log(context, f"Prompt template error: {e}", "warning")
+
+            # Emit verbose feedback event (no-op when verbose mode disabled)
+            payload = {
+                "result_present": bool(formatted and formatted.strip()),
+                "injected_into_prompt": injected_into_prompt,
+                "success": success,
+            }
+            if error_msg:
+                payload["error"] = error_msg
+            verbose_event = emit_verbose_event(
+                self.agent,
+                "context",
+                payload,
+                context=context,
+            )
+            if verbose_event and should_emit_verbose_to_prompt(self.agent):
+                system_prompt.append(format_verbose_event(verbose_event))
 
         except Exception as e:
             try:

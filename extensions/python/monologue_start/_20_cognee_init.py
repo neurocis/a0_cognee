@@ -15,21 +15,59 @@ class CogneeInit(Extension):
             return
 
         try:
-            from helpers.cognee_helper import is_configured, get_dataset_name, _log, _get_bearer_token, get_base_url
+            from helpers.cognee_helper import (
+                is_configured,
+                get_dataset_name,
+                _log,
+                _get_bearer_token,
+                get_base_url,
+                emit_verbose_event,
+            )
 
             context = self.agent.context
 
             if not is_configured(self.agent):
                 context._cognee = {"enabled": False, "reason": "not configured"}
+                # Emit a verbose init event so operators can see why
+                # Cognee is silent (e.g. unconfigured base URL).
+                emit_verbose_event(
+                    self.agent,
+                    "init",
+                    {
+                        "configured": False,
+                        "enabled": False,
+                        "success": False,
+                    },
+                    context=context,
+                )
                 return
 
             # Authenticate with Cognee using OAuth2 Password Grant
             base_url = get_base_url(self.agent)
             token, auth_success = await _get_bearer_token(self.agent, base_url)
-            
+
             if not auth_success:
-                context._cognee = {"enabled": False, "reason": "authentication failed - check COGNEE_USERNAME and COGNEE_PASSWORD in Project Secrets"}
-                _log(context, "❌ Authentication failed. Ensure COGNEE_USERNAME and COGNEE_PASSWORD are set in Project Secrets and match Cognee's DEFAULT_USER_EMAIL/PASSWORD.", "error")
+                context._cognee = {
+                    "enabled": False,
+                    "reason": "authentication failed - check COGNEE_USERNAME and COGNEE_PASSWORD in Project Secrets",
+                }
+                _log(
+                    context,
+                    "❌ Authentication failed. Ensure COGNEE_USERNAME and COGNEE_PASSWORD are set in Project Secrets and match Cognee's DEFAULT_USER_EMAIL/PASSWORD.",
+                    "error",
+                )
+                emit_verbose_event(
+                    self.agent,
+                    "init",
+                    {
+                        "configured": True,
+                        "enabled": False,
+                        "authenticated": False,
+                        "success": False,
+                        "error": "authentication_failed",
+                    },
+                    context=context,
+                )
                 return
 
             dataset_name = get_dataset_name(self.agent)
@@ -52,11 +90,39 @@ class CogneeInit(Extension):
                     f"context={config.get('cognee_context_enabled')}",
                 )
 
+            # Emit verbose init event (no-op when verbose mode disabled)
+            emit_verbose_event(
+                self.agent,
+                "init",
+                {
+                    "dataset": dataset_name,
+                    "configured": True,
+                    "enabled": True,
+                    "authenticated": True,
+                    "success": True,
+                },
+                context=context,
+            )
+
         except Exception as e:
             try:
                 self.agent.context._cognee = {
                     "enabled": False,
                     "reason": str(e),
                 }
+            except Exception:
+                pass
+            try:
+                from helpers.cognee_helper import emit_verbose_event
+
+                emit_verbose_event(
+                    self.agent,
+                    "init",
+                    {
+                        "success": False,
+                        "error": str(e),
+                    },
+                    context=self.agent.context,
+                )
             except Exception:
                 pass

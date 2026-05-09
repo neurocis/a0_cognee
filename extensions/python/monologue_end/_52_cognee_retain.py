@@ -69,9 +69,17 @@ class CogneeRetain(Extension):
     async def _retain_to_cognee(agent, context, history_text, config):
         """Background task: extract knowledge and store in Cognee."""
         try:
-            from helpers.cognee_helper import retain_and_cognify, _log
+            from helpers.cognee_helper import (
+                retain_and_cognify,
+                _log,
+                emit_verbose_event,
+            )
 
             debug = config.get("cognee_debug", False)
+            items_count = 0
+            failed_count = 0
+            success = False
+            error_msg = None
 
             # Use utility LLM to extract key knowledge from conversation
             try:
@@ -87,6 +95,17 @@ class CogneeRetain(Extension):
                 if not extraction_result or not extraction_result.strip():
                     if debug:
                         _log(context, "No knowledge extracted from conversation")
+                    emit_verbose_event(
+                        agent,
+                        "retain",
+                        {
+                            "items_count": 0,
+                            "failed_count": 0,
+                            "success": False,
+                            "reason": "no_extraction",
+                        },
+                        context=context,
+                    )
                     return
 
                 # Parse extracted knowledge - expect JSON array of facts
@@ -95,13 +114,16 @@ class CogneeRetain(Extension):
 
                     facts = DirtyJson.parse_string(extraction_result)
                     if isinstance(facts, list):
+                        items_count = len([f for f in facts if f and str(f).strip()])
                         knowledge_text = "\n\n".join(
                             str(f) for f in facts if f and str(f).strip()
                         )
                     else:
+                        items_count = 1
                         knowledge_text = str(facts)
                 except Exception:
                     # If JSON parsing fails, use raw extraction
+                    items_count = 1
                     knowledge_text = extraction_result
 
             except Exception as e:
@@ -109,8 +131,20 @@ class CogneeRetain(Extension):
                     _log(context, f"LLM extraction failed, using raw history: {e}", "warning")
                 # Fallback: store a condensed version of the conversation
                 knowledge_text = history_text[-2000:]
+                items_count = 1
 
             if not knowledge_text or not knowledge_text.strip():
+                emit_verbose_event(
+                    agent,
+                    "retain",
+                    {
+                        "items_count": 0,
+                        "failed_count": 0,
+                        "success": False,
+                        "reason": "empty_knowledge",
+                    },
+                    context=context,
+                )
                 return
 
             # Store in Cognee
@@ -121,9 +155,13 @@ class CogneeRetain(Extension):
             )
 
             if "error" in result:
+                failed_count = items_count
+                items_count = 0
+                error_msg = str(result.get("error"))
                 if debug:
-                    _log(context, f"Retain failed: {result.get('error')}", "warning")
+                    _log(context, f"Retain failed: {error_msg}", "warning")
             else:
+                success = True
                 # Update retain counter
                 if hasattr(context, "_cognee"):
                     context._cognee["retained_count"] = (
@@ -135,10 +173,35 @@ class CogneeRetain(Extension):
                         f"Retained {len(knowledge_text)} chars of knowledge",
                     )
 
+            # Emit verbose feedback event (no-op when verbose mode disabled)
+            payload = {
+                "items_count": items_count,
+                "failed_count": failed_count,
+                "chars_retained": len(knowledge_text),
+                "success": success,
+            }
+            if error_msg:
+                payload["error"] = error_msg
+            emit_verbose_event(
+                agent,
+                "retain",
+                payload,
+                context=context,
+            )
+
         except Exception as e:
             try:
-                from helpers.cognee_helper import _log
+                from helpers.cognee_helper import _log, emit_verbose_event
 
                 _log(context, f"Background retain error: {e}", "error")
+                emit_verbose_event(
+                    agent,
+                    "retain",
+                    {
+                        "success": False,
+                        "error": str(e),
+                    },
+                    context=context,
+                )
             except Exception:
                 pass
